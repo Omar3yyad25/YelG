@@ -44,18 +44,21 @@ jobs:
           password: ${{ secrets.EC2_PASSWORD }}  # Using password instead of key
           port: 22
           script: |
-            # Create the /var/www/ directory if it doesn't exist
-            sudo mkdir -p /var/www/nextjs-app
+            # Disable StrictHostKeyChecking
+            ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "
+              # Create the /var/www/ directory if it doesn't exist
+              sudo mkdir -p /var/www/nextjs-app
 
-            # Pull the latest image
-            docker pull ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
-            
-            # Stop any previous container (optional)
-            docker stop nextjs-app || true
-            docker rm nextjs-app || true
+              # Pull the latest image
+              docker pull ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
+              
+              # Stop any previous container (optional)
+              docker stop nextjs-app || true
+              docker rm nextjs-app || true
 
-            # Run the new container with PM2, ensuring it's in the /var/www/ directory
-            docker run -d --name nextjs-app -p 3000:3000 -v /var/www/nextjs-app:/usr/src/app ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
+              # Run the new container with PM2, ensuring it's in the /var/www/ directory
+              docker run -d --name nextjs-app -p 3000:3000 -v /var/www/nextjs-app:/usr/src/app ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
 
-            # Ensure the Docker container runs as expected
-            sudo docker logs -f nextjs-app
+              # Ensure the Docker container runs as expected
+              sudo docker logs -f nextjs-app
+            "
