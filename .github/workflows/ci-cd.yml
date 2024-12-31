@@ -41,13 +41,10 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
-          password: ${{ secrets.EC2_PASSWORD }}  # Using password instead of key
+          password: ${{ secrets.EC2_PASSWORD }}  # or key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
+          debug: true
           script: |
-              # Echo the values of username, host, and password (for debugging purposes)
-              echo "EC2 Username: ${{ secrets.EC2_USERNAME }}"
-              echo "EC2 Host: ${{ secrets.EC2_HOST }}"
-              echo "EC2 Password: ${{ secrets.EC2_PASSWORD }}"
               # Create the /var/www/ directory if it doesn't exist
               sudo mkdir -p /var/www/nextjs-app
 
