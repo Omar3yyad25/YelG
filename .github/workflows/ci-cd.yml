@@ -39,8 +39,5 @@ jobs:
             # Pull the latest image
             docker pull ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
             
-            # Stop any previous container (optional)
-            docker stop nextjs-app || true
-            docker rm nextjs-app || true
             # Run the new container with PM2
             docker run -d --name nextjs-app -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
