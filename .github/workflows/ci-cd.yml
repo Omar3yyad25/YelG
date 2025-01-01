@@ -1,32 +1,28 @@
 name: CI/CD Pipeline for Next.js Docker App
+
 on:
   push:
     branches:
       - main  # Run when code is pushed to the main branch
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
       # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
+      
       # Set up Docker Buildx (for multi-platform support)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      # Log in to DockerHub
-      - name: Log in to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      # Build Docker image
+
+      # Build Docker image locally from the repository's Dockerfile
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }} .
-      # Push Docker image to DockerHub
-      - name: Push Docker image
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
+          docker build -t nextjs-app:${{ github.sha }} .
+      
       # SSH into EC2 instance and deploy
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.4
@@ -36,11 +32,12 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            # Pull the latest image
-            docker pull ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
+            # Copy the built image from GitHub to the EC2 instance
+            docker save nextjs-app:${{ github.sha }} | bzip2 | ssh -i ${{ secrets.EC2_SSH_KEY }} ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'bunzip2 | docker load'
             
             # Stop any previous container (optional)
             docker stop nextjs-app || true
             docker rm nextjs-app || true
-            # Run the new container with PM2
-            docker run -d --name nextjs-app -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
+            
+            # Run the new container with PM2 (or any other process manager)
+            docker run -d --name nextjs-app -p 3000:3000 nextjs-app:${{ github.sha }}
