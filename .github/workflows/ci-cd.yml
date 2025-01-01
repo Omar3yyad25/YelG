@@ -1,47 +1,33 @@
 name: CI/CD Pipeline for Next.js Docker App
-
 on:
   push:
     branches:
       - main  # Run when code is pushed to the main branch
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
-
       # Set up Docker Buildx (for multi-platform support)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-
       # Log in to DockerHub
       - name: Log in to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      # Build Docker image with commit SHA
+      # Build Docker image
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }} .
-
-      # Tag the image as "latest"
-      - name: Tag Docker image as latest
-        run: |
-          docker tag ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nextjs-app:latest
-
-      # Push both tags to DockerHub
-      - name: Push Docker images
+      # Push Docker image to DockerHub
+      - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
-          docker push ${{ secrets.DOCKER_USERNAME }}/nextjs-app:latest
-
-      # SSH into EC2 instance and update the server
+      # SSH into EC2 instance and deploy
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.4
         with:
@@ -49,14 +35,12 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-          debug: true
           script: |
             # Pull the latest image
-            docker pull ${{ secrets.DOCKER_USERNAME }}/nextjs-app:latest
+            docker pull ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
             
-            # Stop the current container (but do not remove it)
+            # Stop any previous container (optional)
             docker stop nextjs-app || true
-            
-            # Start the container with the updated image
-            docker run -d --name nextjs-app --restart unless-stopped -p 3000:3000 \
-              -v /var/www/nextjs-app:/usr/src/app ${{ secrets.DOCKER_USERNAME }}/nextjs-app:latest
+            docker rm nextjs-app || true
+            # Run the new container with PM2
+            docker run -d --name nextjs-app -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/nextjs-app:${{ github.sha }}
