@@ -48,7 +48,7 @@ const BannerSection7 = () => {
                 <div className="rv-6-banner__txt">
                   
                   <h1 className="rv-6-banner__title rv-text-anime">
-                  Hi Your Financial Future with Precision and Trust.
+                  Empowring Your Financial Future with Precision and Trust.
                   </h1>
                   <p className="rv-6-banner__descr rv-text-anime">
                   Committed to delivering high-quality services that drive sustainable growth.
